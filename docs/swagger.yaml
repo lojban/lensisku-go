@@ -1,0 +1,303 @@
+basePath: /
+definitions:
+  apperror.ErrorResponse:
+    properties:
+      error:
+        example: A description of the error
+        type: string
+    type: object
+  auth.LoginRequest:
+    properties:
+      login:
+        description: Can be username or email
+        example: user@example.com
+        type: string
+      password:
+        example: strongpassword123
+        type: string
+    type: object
+  auth.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        example: def50200...
+        type: string
+    type: object
+  auth.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: strongpassword123
+        type: string
+      username:
+        example: newuser
+        type: string
+    type: object
+  auth.TokenResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 3600
+        type: integer
+      refresh_token:
+        example: def50200...
+        type: string
+      token_type:
+        description: |-
+          TokenType and ExpiresIn can be kept or removed; for now, let's keep them as they are common.
+          If they cause issues with Rust compatibility, they can be removed.
+        example: Bearer
+        type: string
+    type: object
+  auth.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+  users.UpdateUserProfileRequest:
+    description: Request body for updating user profile
+    properties:
+      bio:
+        description: |-
+          The new biography for the user.
+          example: "Updated bio: Still a Lojban enthusiast, now also learning Klingon."
+        type: string
+      email:
+        description: |-
+          The new email address for the user.
+          example: "john.doe.new@example.com"
+        type: string
+    type: object
+  users.UserProfileResponse:
+    description: User profile information
+    properties:
+      bio:
+        description: |-
+          A short biography of the user
+          example: "Lojban enthusiast and software developer."
+        type: string
+      created_at:
+        description: |-
+          The time the user was created
+          example: "2023-01-15T10:30:00Z"
+        type: string
+      email:
+        description: |-
+          The email address of the user
+          example: "johndoe@example.com"
+        type: string
+      id:
+        description: |-
+          The ID of the user
+          example: 1
+        type: integer
+      username:
+        description: |-
+          The username of the user
+          example: "johndoe"
+        type: string
+    type: object
+info:
+  contact:
+    email: admin@lojban.org
+    name: API Support
+  description: API for Lensisku, providing various application functionalities.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Lensisku API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Logs in an existing user and returns access and refresh tokens.
+      parameters:
+      - description: User login credentials
+        in: body
+        name: loginBody
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful, tokens provided
+          schema:
+            $ref: '#/definitions/auth.TokenResponse'
+        "400":
+          description: Bad Request - Invalid input or missing fields
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "401":
+          description: Unauthorized - Invalid credentials
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+      summary: User Login
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Provides a new access token and refresh token using a valid refresh
+        token.
+      parameters:
+      - description: Refresh token details
+        in: body
+        name: refreshBody
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tokens refreshed successfully
+          schema:
+            $ref: '#/definitions/auth.TokenResponse'
+        "400":
+          description: Bad Request - Invalid input or missing refresh token
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "401":
+          description: Unauthorized - Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Refresh Access Token
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user in the system.
+      parameters:
+      - description: User registration details
+        in: body
+        name: registerBody
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/auth.User'
+        "400":
+          description: Bad Request - Invalid input or missing fields
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "409":
+          description: Conflict - User already exists (username or email)
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+      summary: User Registration
+      tags:
+      - Auth
+  /users/me:
+    get:
+      description: Retrieves the profile information for the currently authenticated
+        user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved user profile
+          schema:
+            $ref: '#/definitions/users.UserProfileResponse'
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "404":
+          description: Not Found - User not found
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user's profile
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Updates the profile information (e.g., email, bio) for the currently
+        authenticated user.
+      parameters:
+      - description: User profile data to update
+        in: body
+        name: userProfile
+        required: true
+        schema:
+          $ref: '#/definitions/users.UpdateUserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated user profile
+          schema:
+            $ref: '#/definitions/users.UserProfileResponse'
+        "400":
+          description: Bad Request - Invalid input data
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "401":
+          description: Unauthorized - Invalid or missing token
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "404":
+          description: Not Found - User not found
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "409":
+          description: Conflict - e.g., email already exists
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/apperror.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update current user's profile
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: Type 'Bearer YOUR_JWT_TOKEN' to authorize
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
